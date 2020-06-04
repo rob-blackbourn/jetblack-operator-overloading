@@ -1,0 +1,36 @@
+{
+  "name": "@jetblack/operator-overloading",
+  "version": "0.1.0",
+  "description": "A babel plugin for operator overloading",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node examples/bin/dev",
+    "start-prod": "npm run build && node examples/bin/prod",
+    "build-example": "babel examples/src --source-maps --out-dir examples/dist",
+    "test": "mocha --require @babel/register"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rob-blackbourn/jetblack-operator-overloading.git"
+  },
+  "keywords": [
+    "babel",
+    "operator",
+    "overload",
+    "overloading"
+  ],
+  "author": "Rob Blackbourn",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/rob-blackbourn/jetblack-operator-overloading/issues"
+  },
+  "homepage": "https://github.com/rob-blackbourn/jetblack-operator-overloading#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.10.0",
+    "@babel/core": "^7.10.0",
+    "@babel/preset-env": "^7.10.0",
+    "@babel/register": "^7.10.1",
+    "@babel/template": "^7.10.1",
+    "mocha": "^7.2.0"
+  }
+}
