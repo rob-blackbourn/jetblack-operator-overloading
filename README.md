@@ -2,7 +2,7 @@
 
 A Babel plugin for operator overloading.
 
-There is a trivial template project [here](https://github.com/rob-blackbourn/babel-operator-overload-plugin-example).
+There is a trivial template project [here](https://github.com/rob-blackbourn/example-operator-overloading).
 
 This was based on an [idea](https://github.com/foxbenjaminfox/babel-operator-overload-plugin)
 by [Benjamin Fox](https://github.com/foxbenjaminfox)
