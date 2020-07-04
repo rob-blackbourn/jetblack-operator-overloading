@@ -78,7 +78,7 @@ I would appreciate any help!
 3. Install the operator overload plugin. Note that `"node": "current"` is specified in targets. The targets specified **must** support arrow functions.
 
 ```bash
-~/my-app$ npm install --save-dev https://github.com/rob-blackbourn/jetblack-operator-overloading.git#0.1.0
+~/my-app$ npm install --save-dev @jetblack/operator-overloading
 ```
 4. Create a `.babelrc` file:
 ```json
