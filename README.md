@@ -7,6 +7,12 @@ There is a trivial template project [here](https://github.com/rob-blackbourn/exa
 This was based on an [idea](https://github.com/foxbenjaminfox/babel-operator-overload-plugin)
 by [Benjamin Fox](https://github.com/foxbenjaminfox)
 
+There are a number of great implementations of operator overloading including a
+current [proposal](https://github.com/tc39/proposal-operator-overloading). This
+proposal is far more sophisticated than this implementation, but I had issues
+with my use case. This is a very simple version that worked for me and might
+be a good work-around for you while we wait for the proposal to be accepted.
+
 ## Example
 
 The following code adds two integers and then two points.
