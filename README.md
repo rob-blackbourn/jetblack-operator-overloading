@@ -4,7 +4,7 @@ A Babel plugin for operator overloading.
 
 There is a trivial template project [here](https://github.com/rob-blackbourn/example-operator-overloading).
 
-This was based on an [idea](https://github.com/foxbenjaminfox/babel-operator-overload-plugin)
+This was based on an [idea](https://github.com/foxbenjaminfox/babel-plugin-overload)
 by [Benjamin Fox](https://github.com/foxbenjaminfox)
 
 There are a number of great implementations of operator overloading including a
