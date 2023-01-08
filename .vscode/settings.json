@@ -1,4 +1,8 @@
 {
+  "[javascript]": {
+    "editor.maxTokenizationLineLength": 2500,
+    "editor.formatOnSave": true
+  },
   "cSpell.words": [
     "Blackbourn",
     "exponentation",

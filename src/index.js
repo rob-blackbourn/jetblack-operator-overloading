@@ -1,7 +1,7 @@
-const babelTemplate = require('@babel/template')
-const template = babelTemplate.default
+const babelTemplate = require("@babel/template");
+const template = babelTemplate.default;
 
-const OperatorOverloadDirectiveName = 'operator-overloading'
+const OperatorOverloadDirectiveName = "operator-overloading";
 
 function createBinaryTemplate(op) {
   return template(`
@@ -13,7 +13,7 @@ function createBinaryTemplate(op) {
             : LHS ${op} RHS
         }
       )
-  `)
+  `);
 }
 
 function createUnaryTemplate(symbol, op) {
@@ -25,7 +25,7 @@ function createUnaryTemplate(symbol, op) {
         ? ARG[Symbol.for("${symbol}")]()
         : ${op} ARG
     }
-  )`)
+  )`);
 }
 
 function createUpdateTemplate(symbol, op, prefix) {
@@ -38,7 +38,7 @@ function createUpdateTemplate(symbol, op, prefix) {
           ? ARG[Symbol.for("${symbol}")]()
           : ${op} ARG
       }
-    )`)
+    )`);
   } else {
     return template(`
     (
@@ -48,12 +48,12 @@ function createUpdateTemplate(symbol, op, prefix) {
           ? ARG[Symbol.for("${symbol}")]()
           : ARG ${op}
       }
-    )`)
+    )`);
   }
 }
 
 function createDeleteExpressionStatement(t, argument) {
-  if (argument.property.type === 'StringLiteral') {
+  if (argument.property.type === "StringLiteral") {
     const deleteTemplate = template(`
     (
       () => {
@@ -62,12 +62,12 @@ function createDeleteExpressionStatement(t, argument) {
           ? OBJECT[Symbol.for("delete")](KEY)
           : delete OBJECT[KEY]
       }
-    )`)
+    )`);
     return deleteTemplate({
       OBJECT: argument.object,
-      KEY: argument.property
-    })
-  } else if (argument.property.type === 'Identifier') {
+      KEY: argument.property,
+    });
+  } else if (argument.property.type === "Identifier") {
     const deleteTemplate = template(`
     (
       () => {
@@ -76,195 +76,213 @@ function createDeleteExpressionStatement(t, argument) {
           ? OBJECT[Symbol.for("delete")](KEY)
           : delete OBJECT.PROPERTY
       }
-    )`)
+    )`);
     return deleteTemplate({
       OBJECT: argument.object,
       KEY: t.stringLiteral(argument.property.name),
-      PROPERTY: argument.property
-    })
+      PROPERTY: argument.property,
+    });
   } else {
-    throw Error(`Unhandled property type ${argument.property.type}`)
+    throw Error(`Unhandled property type ${argument.property.type}`);
   }
 }
 
 function hasDirective(directives, name, values) {
   for (const directive of directives) {
     if (directive.value.value.startsWith(name)) {
-      const setting = directive.value.value.substring(name.length).trim().toLowerCase()
-      return values[setting]
+      const setting = directive.value.value
+        .substring(name.length)
+        .trim()
+        .toLowerCase();
+      return values[setting];
     }
   }
-  return undefined
+  return undefined;
 }
 
 function hasOverloadingDirective(directives) {
-  return hasDirective(directives, OperatorOverloadDirectiveName, { 'enabled': true, 'disabled': false })
+  return hasDirective(directives, OperatorOverloadDirectiveName, {
+    enabled: true,
+    disabled: false,
+  });
 }
 
 module.exports = function ({ types: t }) {
   return {
     visitor: {
-
       Program: {
         enter(path, state) {
-
           if (state.dynamicData === undefined) {
-            state.dynamicData = {}
+            state.dynamicData = {};
           }
 
-          if (!state.dynamicData.hasOwnProperty(OperatorOverloadDirectiveName)) {
+          if (
+            !state.dynamicData.hasOwnProperty(OperatorOverloadDirectiveName)
+          ) {
             state.dynamicData[OperatorOverloadDirectiveName] = {
-              directives: []
-            }
+              directives: [],
+            };
           }
+
+          const directives = state.dynamicData[OperatorOverloadDirectiveName];
 
           switch (hasOverloadingDirective(path.node.directives)) {
             case true:
-              state.dynamicData[OperatorOverloadDirectiveName].directives.unshift(true)
+              directives.unshift(true);
               break;
             case false:
-              state.dynamicData[OperatorOverloadDirectiveName].directives.unshift(false)
+              directives.unshift(false);
               break;
             default:
-              // Default to false.
-              state.dynamicData[OperatorOverloadDirectiveName].directives.unshift(state.opts.enabled == undefined ? false : state.opts.enabled)
+              directives.unshift(
+                state.opts.enabled == undefined
+                  ? false // Default to false.
+                  : state.opts.enabled
+              );
               break;
           }
         },
         exit(path, state) {
+          const directives = state.dynamicData[OperatorOverloadDirectiveName];
+
           if (hasOverloadingDirective(path.node.directives) !== false) {
-            state.dynamicData[OperatorOverloadDirectiveName].directives.shift()
+            directives.shift();
           }
-        }
+        },
       },
 
       BlockStatement: {
         enter(path, state) {
+          const directives = state.dynamicData[OperatorOverloadDirectiveName];
+
           switch (hasOverloadingDirective(path.node.directives)) {
             case true:
-              state.dynamicData[OperatorOverloadDirectiveName].directives.unshift(true)
-              break
+              directives.unshift(true);
+              break;
             case false:
-              state.dynamicData[OperatorOverloadDirectiveName].directives.unshift(false)
-              break
+              directives.unshift(false);
+              break;
           }
         },
         exit(path, state) {
+          const directives = state.dynamicData[OperatorOverloadDirectiveName];
+
           switch (hasOverloadingDirective(path.node.directives)) {
             case true:
             case false:
-              state.dynamicData[OperatorOverloadDirectiveName].directives.shift()
-              break
+              directives.shift();
+              break;
           }
-        }
+        },
       },
 
       BinaryExpression(path, state) {
+        const directives = state.dynamicData[OperatorOverloadDirectiveName];
 
-        if (!state.dynamicData[OperatorOverloadDirectiveName].directives[0]) {
-          return
+        if (!directives[0]) {
+          return;
         }
 
-        if (path.node.operator.endsWith('===') || 
-            path.node.operator == '&&' ||
-            path.node.operator == '||' ||
-            path.node.operator == 'instanceof') {
-          return
+        if (
+          path.node.operator.endsWith("===") ||
+          path.node.operator == "&&" ||
+          path.node.operator == "||" ||
+          path.node.operator == "instanceof"
+        ) {
+          return;
         }
 
         const expressionStatement = createBinaryTemplate(path.node.operator)({
           LHS: path.node.left,
-          RHS: path.node.right
-        })
+          RHS: path.node.right,
+        });
 
-        path.replaceWith(
-          t.callExpression(
-            expressionStatement.expression,
-            []
-          )
-        )
+        path.replaceWith(t.callExpression(expressionStatement.expression, []));
       },
 
       UpdateExpression(path, state) {
+        const directives = state.dynamicData[OperatorOverloadDirectiveName];
 
-        if (!state.dynamicData[OperatorOverloadDirectiveName].directives[0]) {
-          return
+        if (!directives[0]) {
+          return;
         }
 
-        const symbol = (path.node.prefix ? 'prefix-' : 'postfix-')
-          + (path.node.operator == '++' ? 'increment' : 'decrement')
+        const symbol =
+          (path.node.prefix ? "prefix-" : "postfix-") +
+          (path.node.operator == "++" ? "increment" : "decrement");
 
-        const expressionTemplate = createUpdateTemplate(symbol, path.node.operator, path.node.prefix)
+        const expressionTemplate = createUpdateTemplate(
+          symbol,
+          path.node.operator,
+          path.node.prefix
+        );
         const expressionStatement = expressionTemplate({
-            ARG: path.node.argument,
-        })
+          ARG: path.node.argument,
+        });
 
-        path.replaceWith(
-          t.callExpression(
-            expressionStatement.expression,
-            []
-          )
-        )
+        path.replaceWith(t.callExpression(expressionStatement.expression, []));
       },
 
       UnaryExpression(path, state) {
+        const directives = state.dynamicData[OperatorOverloadDirectiveName];
 
-        if (!state.dynamicData[OperatorOverloadDirectiveName].directives[0]) {
-          return
+        if (!directives[0]) {
+          return;
         }
 
-        if (path.node.operator == 'typeof' ||
-            path.node.operator == 'void') {
-          return
+        if (path.node.operator == "typeof" || path.node.operator == "void") {
+          return;
         }
 
-        const symbolOverrides = {'+': 'plus', '-': 'minus'}
-        const symbol = path.node.operator in symbolOverrides
-          ? symbolOverrides[path.node.operator]
-          : path.node.operator
+        const symbolOverrides = { "+": "plus", "-": "minus" };
+        const symbol =
+          path.node.operator in symbolOverrides
+            ? symbolOverrides[path.node.operator]
+            : path.node.operator;
 
-        const expressionStatement = symbol === 'delete'
-          ? createDeleteExpressionStatement(t, path.node.argument)
-          : createUnaryTemplate(symbol, path.node.operator)({
-              ARG: path.node.argument,
-            })
+        const expressionStatement =
+          symbol === "delete"
+            ? createDeleteExpressionStatement(t, path.node.argument)
+            : createUnaryTemplate(
+                symbol,
+                path.node.operator
+              )({
+                ARG: path.node.argument,
+              });
 
-        path.replaceWith(
-          t.callExpression(
-            expressionStatement.expression,
-            []
-          )
-        )
+        path.replaceWith(t.callExpression(expressionStatement.expression, []));
       },
 
       AssignmentExpression(path, state) {
+        const directives = state.dynamicData[OperatorOverloadDirectiveName];
 
-        if (!state.dynamicData[OperatorOverloadDirectiveName].directives[0]) {
-          return
+        if (!directives[0]) {
+          return;
         }
 
         if (path.node.operator === "=") {
-          return
+          return;
         }
 
-        const operator = path.node.operator.slice(0,path.node.operator.length - 1)
+        const operator = path.node.operator.slice(
+          0,
+          path.node.operator.length - 1
+        );
 
         const expressionStatement = createBinaryTemplate(operator)({
           LHS: path.node.left,
-          RHS: path.node.right
-        })
+          RHS: path.node.right,
+        });
 
         const callExpression = t.callExpression(
           expressionStatement.expression,
           []
-        )
+        );
 
         path.replaceWith(
-          t.assignmentExpression(
-            '=',
-            path.node.left,
-            callExpression))
-      }
-    }
-  }
-}
+          t.assignmentExpression("=", path.node.left, callExpression)
+        );
+      },
+    },
+  };
+};
