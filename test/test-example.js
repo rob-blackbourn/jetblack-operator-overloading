@@ -1,6 +1,6 @@
-var babel = require("@babel/core");
+const babel = require("@babel/core");
 
-var result = babel.transformFileSync(
+const result = babel.transformFileSync(
   './examples/src/index.js',
   {
     presets: [

@@ -86,6 +86,7 @@ function createDeleteExpressionStatement(t, argument) {
     throw Error(`Unhandled property type ${argument.property.type}`)
   }
 }
+
 function hasDirective(directives, name, values) {
   for (const directive of directives) {
     if (directive.value.value.startsWith(name)) {

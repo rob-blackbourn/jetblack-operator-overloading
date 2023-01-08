@@ -1,11 +1,11 @@
-import assert from 'assert'
-import {transform} from '@babel/core'
+const assert = require('assert')
+const {transform} = require('@babel/core')
 
 function trim(str) {
   return str.replace(/^\s+|\s+$/, '')
 }
 
-export function runTests(tests) {
+function runTests(tests) {
   tests.map(({description, operation, expectation}) => {
     it(description, () => {
       const actual = transform(
@@ -22,4 +22,8 @@ export function runTests(tests) {
         assert.equal(trim(actual.code), trim(expectation))
     })
   })
+}
+
+module.exports = {
+  runTests
 }

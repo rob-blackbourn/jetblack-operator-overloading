@@ -1,4 +1,4 @@
-import { runTests } from './utils'
+const { runTests } = require('./utils')
 
 describe('arithmetic binary', () => {
   runTests([
