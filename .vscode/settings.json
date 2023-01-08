@@ -1,7 +1,8 @@
 {
   "[javascript]": {
     "editor.maxTokenizationLineLength": 2500,
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "editor.rulers": [80]
   },
   "cSpell.words": [
     "Blackbourn",

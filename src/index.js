@@ -2,6 +2,8 @@ const babelTemplate = require("@babel/template");
 const template = babelTemplate.default;
 
 const OperatorOverloadDirectiveName = "operator-overloading";
+const ExcludedBinaryOperators = ["===", "!==", "&&", "||", "instanceof"];
+const ExcludedUnaryOperators = ["typeof", "void"];
 
 function createBinaryTemplate(op) {
   return template(`
@@ -112,6 +114,7 @@ module.exports = function ({ types: t }) {
     visitor: {
       Program: {
         enter(path, state) {
+          // Create a property to store the plugin state.
           if (state.dynamicData === undefined) {
             state.dynamicData = {};
           }
@@ -119,6 +122,9 @@ module.exports = function ({ types: t }) {
           if (
             !state.dynamicData.hasOwnProperty(OperatorOverloadDirectiveName)
           ) {
+            // Initialize the plugin state with directives. This is a stack
+            // (using a list) which indicates whether operator overloading is
+            // enabled.
             state.dynamicData[OperatorOverloadDirectiveName] = {
               directives: [],
             };
@@ -126,14 +132,19 @@ module.exports = function ({ types: t }) {
 
           const directives = state.dynamicData[OperatorOverloadDirectiveName];
 
+          // Check the directives to see whether operator overloading is enabled.
           switch (hasOverloadingDirective(path.node.directives)) {
             case true:
+              // The operator overloading directive is present and enabled.
               directives.unshift(true);
               break;
             case false:
+              // The operator overloading directive is present and disabled.
               directives.unshift(false);
               break;
             default:
+              // The operator overloading directive is absent. Check the plugin
+              // option to determine whether to enable operator overloading.
               directives.unshift(
                 state.opts.enabled == undefined
                   ? false // Default to false.
@@ -146,6 +157,7 @@ module.exports = function ({ types: t }) {
           const directives = state.dynamicData[OperatorOverloadDirectiveName];
 
           if (hasOverloadingDirective(path.node.directives) !== false) {
+            // Unstack the enabled/disabled state.
             directives.shift();
           }
         },
@@ -183,12 +195,7 @@ module.exports = function ({ types: t }) {
           return;
         }
 
-        if (
-          path.node.operator.endsWith("===") ||
-          path.node.operator == "&&" ||
-          path.node.operator == "||" ||
-          path.node.operator == "instanceof"
-        ) {
+        if (ExcludedBinaryOperators.includes(path.node.operator)) {
           return;
         }
 
@@ -230,7 +237,7 @@ module.exports = function ({ types: t }) {
           return;
         }
 
-        if (path.node.operator == "typeof" || path.node.operator == "void") {
+        if (ExcludedUnaryOperators.includes(path.node.operator)) {
           return;
         }
 
