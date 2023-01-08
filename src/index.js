@@ -6,6 +6,26 @@ const ExcludedBinaryOperators = ["===", "!==", "&&", "||", "instanceof"];
 const ExcludedUnaryOperators = ["typeof", "void"];
 
 function createBinaryTemplate(op) {
+  // Generate a binary expression.
+  // This creates an arrow function to replace the binary expression.
+  // So:
+  //   a + b
+  // becomes:
+  //   (
+  //     () => {
+  //       'operator-overloading disabled'
+  //       return a !== undefined && a !== null && a[Symbol.for("+")]
+  //         ? a[Symbol.for("+")](b)
+  //         : a + b
+  //     }
+  //   )
+  //
+  // The first instruction is to disable operator overloading the the scope of
+  // the arrow function.
+  //
+  // If the left hand side of the expression has a symbol property for
+  // the operator, that function is used to evaluate the binary expression.
+  // Otherwise the operator is used for the binary expression.
   return template(`
       (
         () => {
@@ -19,6 +39,7 @@ function createBinaryTemplate(op) {
 }
 
 function createUnaryTemplate(symbol, op) {
+  // See createBinaryTemplate for an explanation of the templates.
   return template(`
   (
     () => {
@@ -31,6 +52,7 @@ function createUnaryTemplate(symbol, op) {
 }
 
 function createUpdateTemplate(symbol, op, prefix) {
+  // See createBinaryTemplate for an explanation of the templates.
   if (prefix) {
     return template(`
     (
@@ -55,6 +77,7 @@ function createUpdateTemplate(symbol, op, prefix) {
 }
 
 function createDeleteExpressionStatement(t, argument) {
+  // See createBinaryTemplate for an explanation of the templates.
   if (argument.property.type === "StringLiteral") {
     const deleteTemplate = template(`
     (
@@ -90,6 +113,9 @@ function createDeleteExpressionStatement(t, argument) {
 }
 
 function hasDirective(directives, name, values) {
+  // A directive may be present or absent. If absent the result is undefined. If
+  // present, the optional argument is used as a property index to the values
+  // argument and the result returned.
   for (const directive of directives) {
     if (directive.value.value.startsWith(name)) {
       const setting = directive.value.value
@@ -109,28 +135,34 @@ function hasOverloadingDirective(directives) {
   });
 }
 
+function initDirectives(state) {
+  // Create a property to store the plugin state.
+  if (state.dynamicData === undefined) {
+    state.dynamicData = {};
+  }
+
+  if (!state.dynamicData.hasOwnProperty(OperatorOverloadDirectiveName)) {
+    // Initialize the plugin state with directives. This is a stack
+    // (using a list) which indicates whether operator overloading is
+    // enabled.
+    state.dynamicData[OperatorOverloadDirectiveName] = {
+      directives: [],
+    };
+  }
+
+  return state.dynamicData[OperatorOverloadDirectiveName].directives;
+}
+
+function getDirectives(state) {
+  return state.dynamicData[OperatorOverloadDirectiveName].directives;
+}
+
 module.exports = function ({ types: t }) {
   return {
     visitor: {
       Program: {
         enter(path, state) {
-          // Create a property to store the plugin state.
-          if (state.dynamicData === undefined) {
-            state.dynamicData = {};
-          }
-
-          if (
-            !state.dynamicData.hasOwnProperty(OperatorOverloadDirectiveName)
-          ) {
-            // Initialize the plugin state with directives. This is a stack
-            // (using a list) which indicates whether operator overloading is
-            // enabled.
-            state.dynamicData[OperatorOverloadDirectiveName] = {
-              directives: [],
-            };
-          }
-
-          const directives = state.dynamicData[OperatorOverloadDirectiveName];
+          const directives = initDirectives(state);
 
           // Check the directives to see whether operator overloading is enabled.
           switch (hasOverloadingDirective(path.node.directives)) {
@@ -154,7 +186,7 @@ module.exports = function ({ types: t }) {
           }
         },
         exit(path, state) {
-          const directives = state.dynamicData[OperatorOverloadDirectiveName];
+          const directives = getDirectives(state);
 
           if (hasOverloadingDirective(path.node.directives) !== false) {
             // Unstack the enabled/disabled state.
@@ -165,7 +197,7 @@ module.exports = function ({ types: t }) {
 
       BlockStatement: {
         enter(path, state) {
-          const directives = state.dynamicData[OperatorOverloadDirectiveName];
+          const directives = getDirectives(state);
 
           switch (hasOverloadingDirective(path.node.directives)) {
             case true:
@@ -177,7 +209,7 @@ module.exports = function ({ types: t }) {
           }
         },
         exit(path, state) {
-          const directives = state.dynamicData[OperatorOverloadDirectiveName];
+          const directives = getDirectives(state);
 
           switch (hasOverloadingDirective(path.node.directives)) {
             case true:
@@ -189,7 +221,7 @@ module.exports = function ({ types: t }) {
       },
 
       BinaryExpression(path, state) {
-        const directives = state.dynamicData[OperatorOverloadDirectiveName];
+        const directives = getDirectives(state);
 
         if (!directives[0]) {
           return;
@@ -208,7 +240,7 @@ module.exports = function ({ types: t }) {
       },
 
       UpdateExpression(path, state) {
-        const directives = state.dynamicData[OperatorOverloadDirectiveName];
+        const directives = getDirectives(state);
 
         if (!directives[0]) {
           return;
@@ -231,7 +263,7 @@ module.exports = function ({ types: t }) {
       },
 
       UnaryExpression(path, state) {
-        const directives = state.dynamicData[OperatorOverloadDirectiveName];
+        const directives = getDirectives(state);
 
         if (!directives[0]) {
           return;
@@ -261,7 +293,7 @@ module.exports = function ({ types: t }) {
       },
 
       AssignmentExpression(path, state) {
-        const directives = state.dynamicData[OperatorOverloadDirectiveName];
+        const directives = getDirectives(state);
 
         if (!directives[0]) {
           return;
