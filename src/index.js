@@ -157,6 +157,11 @@ function getDirectives(state) {
   return state.dynamicData[OperatorOverloadDirectiveName].directives;
 }
 
+function isOperatorOverloadingEnabled(state) {
+  const directives = getDirectives(state);
+  return directives[0];
+}
+
 module.exports = function ({ types: t }) {
   return {
     visitor: {
@@ -221,9 +226,7 @@ module.exports = function ({ types: t }) {
       },
 
       BinaryExpression(path, state) {
-        const directives = getDirectives(state);
-
-        if (!directives[0]) {
+        if (!isOperatorOverloadingEnabled(state)) {
           return;
         }
 
@@ -240,9 +243,7 @@ module.exports = function ({ types: t }) {
       },
 
       UpdateExpression(path, state) {
-        const directives = getDirectives(state);
-
-        if (!directives[0]) {
+        if (!isOperatorOverloadingEnabled(state)) {
           return;
         }
 
@@ -263,9 +264,7 @@ module.exports = function ({ types: t }) {
       },
 
       UnaryExpression(path, state) {
-        const directives = getDirectives(state);
-
-        if (!directives[0]) {
+        if (!isOperatorOverloadingEnabled(state)) {
           return;
         }
 
@@ -293,9 +292,7 @@ module.exports = function ({ types: t }) {
       },
 
       AssignmentExpression(path, state) {
-        const directives = getDirectives(state);
-
-        if (!directives[0]) {
+        if (!isOperatorOverloadingEnabled(state)) {
           return;
         }
 
